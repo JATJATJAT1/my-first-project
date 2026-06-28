@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { PARTNERS, Partner } from '@/lib/integrations/partners';
+import { PartnerLogo } from '@/lib/integrations/logos';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
 interface ConnectedIntegration {
@@ -71,7 +72,7 @@ function ConnectModal({
     <div className="backdrop" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
         <div className="modal-head">
-          <div className="modal-icon" style={{ background: partner.color }}>{partner.icon}</div>
+          <div className="modal-icon"><PartnerLogo id={partner.id} size={48} /></div>
           <div>
             <h2 className="modal-title">Connect {partner.name}</h2>
             <p className="modal-desc">{partner.description}</p>
@@ -139,7 +140,7 @@ function IntegrationCard({
   return (
     <div className={`card ${connected ? 'card-on' : ''}`}>
       <div className="card-top">
-        <div className="c-icon" style={{ background: partner.color }}>{partner.icon}</div>
+        <div className="c-icon"><PartnerLogo id={partner.id} size={40} /></div>
         <span className={`badge ${connected ? 'badge-on' : 'badge-live'}`}>
           {connected ? '✓ Connected' : '✓ Live'}
         </span>
@@ -337,13 +338,9 @@ export default function IntegrationsPage() {
         .c-icon {
           width: 40px; height: 40px;
           border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1rem;
-          font-weight: 700;
-          color: #fff;
+          overflow: hidden;
           flex-shrink: 0;
+          display: flex;
         }
         .badge {
           font-size: 0.6875rem;
@@ -439,13 +436,9 @@ export default function IntegrationsPage() {
         .modal-icon {
           width: 48px; height: 48px;
           border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #fff;
+          overflow: hidden;
           flex-shrink: 0;
+          display: flex;
         }
         .modal-title {
           font-size: 1.125rem;
