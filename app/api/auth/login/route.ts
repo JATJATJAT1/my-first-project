@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseBrowser } from '@/lib/supabase/client';
+import { LoginSchema, parseBody } from '@/lib/validation';
 
-// POST /api/auth/login
-// Body: { email: string; password: string }
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
-
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
+    let body: unknown;
+    try { body = await req.json(); } catch {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
     }
-    if (!password || typeof password !== 'string') {
-      return NextResponse.json({ error: 'Password is required.' }, { status: 400 });
+
+    let email: string, password: string;
+    try {
+      ({ email, password } = parseBody(LoginSchema, body));
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
     }
 
     const { data, error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
@@ -27,10 +29,7 @@ export async function POST(req: NextRequest) {
         expires_at:    data.session.expires_at,
         token_type:    'bearer',
       },
-      user: {
-        id:    data.user.id,
-        email: data.user.email,
-      },
+      user: { id: data.user.id, email: data.user.email },
     });
   } catch (err: any) {
     console.error('POST /api/auth/login error:', err);

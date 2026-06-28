@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseService } from '@/lib/supabase/service';
 import { isAdminToken } from '@/lib/admin';
+import { AdminSeedSchema, parseBody } from '@/lib/validation';
 
 const ADMIN_USERS = [
   {
@@ -23,7 +24,18 @@ const ADMIN_USERS = [
 
 export async function POST(req: NextRequest) {
   try {
-    const { token } = await req.json();
+    let body: unknown;
+    try { body = await req.json(); } catch {
+      return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+    }
+
+    let token: string;
+    try {
+      ({ token } = parseBody(AdminSeedSchema, body));
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
+
     if (!isAdminToken(token)) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
