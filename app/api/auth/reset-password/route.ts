@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseService } from '@/lib/supabase/service';
+import { supabaseBrowser } from '@/lib/supabase/client';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required.' }, { status: 400 });
     }
 
-    const { error } = await supabaseService.auth.resetPasswordForEmail(email, {
+    // Must use anon client — service role does not send reset emails.
+    const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/update-password`,
     });
 

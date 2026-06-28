@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { supabaseBrowser } from '@/lib/supabase/client';
 
 type View = 'login' | 'reset' | 'reset-sent';
 
@@ -22,15 +23,11 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password }),
-      });
+      // Use Supabase directly so the session cookie is set in the browser.
+      const { error: authError } = await supabaseBrowser.auth.signInWithPassword({ email, password });
 
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error ?? 'Login failed. Please try again.');
+      if (authError) {
+        setError(authError.message ?? 'Login failed. Please try again.');
         return;
       }
 

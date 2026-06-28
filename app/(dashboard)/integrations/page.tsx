@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { PARTNERS, Partner } from '@/lib/integrations/partners';
+import { supabaseBrowser } from '@/lib/supabase/client';
 
 interface ConnectedIntegration {
   partner_id:     string;
@@ -37,9 +38,10 @@ function ConnectModal({
     setLoading(true);
     setError('');
     try {
+      const headers = await authHeaders();
       const res = await fetch('/api/integrations/connect', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body:    JSON.stringify({ partnerId: partner.id, credentials: fields }),
       });
       if (!res.ok) {
@@ -76,7 +78,14 @@ function ConnectModal({
                 ? `Click below to authorise ShiftAI via ${partner.name}'s secure OAuth flow.`
                 : 'This integration is enabled automatically — no additional setup needed.'}
             </p>
-            <button className="btn-primary full mt3" onClick={() => { onSuccess(partner.id); onClose(); }}>
+            <button className="btn-primary full mt3" onClick={async () => {
+              const headers = await authHeaders();
+              await fetch('/api/integrations/connect', {
+                method: 'POST', headers,
+                body: JSON.stringify({ partnerId: partner.id, credentials: {} }),
+              });
+              onSuccess(partner.id); onClose();
+            }}>
               {partner.authType === 'oauth' ? `Authorise with ${partner.name}` : 'Enable'}
             </button>
           </>
@@ -141,13 +150,22 @@ function IntegrationCard({
   );
 }
 
+async function authHeaders(): Promise<HeadersInit> {
+  const { data: { session } } = await supabaseBrowser.auth.getSession();
+  return {
+    'Content-Type': 'application/json',
+    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+  };
+}
+
 export default function IntegrationsPage() {
   const [connected, setConnected] = useState<Set<string>>(new Set());
   const [modal, setModal]         = useState<Partner | null>(null);
   const [loading, setLoading]     = useState(true);
 
-  useEffect(() => {
-    fetch('/api/integrations')
+  const loadIntegrations = useCallback(async () => {
+    const headers = await authHeaders();
+    fetch('/api/integrations', { headers })
       .then(r => r.json())
       .then(data => {
         if (data.integrations) {
@@ -162,11 +180,14 @@ export default function IntegrationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => { loadIntegrations(); }, [loadIntegrations]);
+
   async function handleDisconnect(partnerId: string) {
+    const headers = await authHeaders();
     await fetch('/api/integrations/disconnect', {
-      method:  'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ partnerId }),
+      method: 'DELETE',
+      headers,
+      body:   JSON.stringify({ partnerId }),
     });
     setConnected(prev => { const n = new Set(prev); n.delete(partnerId); return n; });
   }
