@@ -20,9 +20,9 @@ export async function POST(req: NextRequest) {
     }
 
     let partnerId: string;
-    let credentials: Record<string, string>;
+    let credentials: Record<string, string> = {};
     try {
-      ({ partnerId, credentials } = parseBody(ConnectIntegrationSchema, body));
+      ({ partnerId, credentials } = parseBody(ConnectIntegrationSchema, body) as { partnerId: string; credentials: Record<string, string> });
     } catch (e: any) {
       return NextResponse.json({ error: e.message }, { status: 400 });
     }

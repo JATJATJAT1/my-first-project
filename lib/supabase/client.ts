@@ -1,7 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Browser-side Supabase client — uses anon key, handles session cookies automatically.
-export const supabaseBrowser = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+let _client: SupabaseClient | null = null;
+
+export function getSupabaseBrowser(): SupabaseClient {
+  if (!_client) {
+    _client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    );
+  }
+  return _client;
+}
+
+// Convenience proxy so existing call sites work unchanged.
+export const supabaseBrowser = new Proxy({} as SupabaseClient, {
+  get(_t, prop) {
+    return (getSupabaseBrowser() as any)[prop];
+  },
+});

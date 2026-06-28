@@ -36,13 +36,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  // Restrict API request body size — prevents payload-flooding attacks
-  api: {
-    bodyParser: {
-      sizeLimit: '16kb',
-    },
-  },
-
   async headers() {
     return [
       {
