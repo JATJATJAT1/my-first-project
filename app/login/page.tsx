@@ -213,7 +213,7 @@ export default function LoginPage() {
             </p>
             <p className="shift-email-display text-center mb-6">{email}</p>
             <p className="shift-hint text-center mb-6">
-              Check your spam folder if you don't see it within a minute.
+              Check your spam folder if you don't see it within a minute. The link expires in 1 hour.
             </p>
             <button
               type="button"

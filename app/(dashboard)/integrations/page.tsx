@@ -24,6 +24,13 @@ function ConnectModal({
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
 
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const fieldMap: Record<string, string[]> = {
     api_key:     ['API Key'],
     credentials: ['Username', 'Password'],
@@ -159,9 +166,16 @@ async function authHeaders(): Promise<HeadersInit> {
 }
 
 export default function IntegrationsPage() {
-  const [connected, setConnected] = useState<Set<string>>(new Set());
-  const [modal, setModal]         = useState<Partner | null>(null);
-  const [loading, setLoading]     = useState(true);
+  const [connected, setConnected]     = useState<Set<string>>(new Set());
+  const [modal, setModal]             = useState<Partner | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [toast, setToast]             = useState('');
+  const [confirmId, setConfirmId]     = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  }
 
   const loadIntegrations = useCallback(async () => {
     const headers = await authHeaders();
@@ -183,6 +197,8 @@ export default function IntegrationsPage() {
   useEffect(() => { loadIntegrations(); }, [loadIntegrations]);
 
   async function handleDisconnect(partnerId: string) {
+    const name = PARTNERS.find(p => p.id === partnerId)?.name ?? partnerId;
+    if (!window.confirm(`Disconnect ${name}? ShiftAI will stop receiving leads from this source.`)) return;
     const headers = await authHeaders();
     await fetch('/api/integrations/disconnect', {
       method: 'DELETE',
@@ -190,6 +206,7 @@ export default function IntegrationsPage() {
       body:   JSON.stringify({ partnerId }),
     });
     setConnected(prev => { const n = new Set(prev); n.delete(partnerId); return n; });
+    showToast(`${name} disconnected.`);
   }
 
   return (
@@ -238,8 +255,16 @@ export default function IntegrationsPage() {
         <ConnectModal
           partner={modal}
           onClose={() => setModal(null)}
-          onSuccess={id => setConnected(prev => new Set([...prev, id]))}
+          onSuccess={id => {
+            setConnected(prev => new Set([...prev, id]));
+            const name = PARTNERS.find(p => p.id === id)?.name ?? id;
+            showToast(`${name} connected ✓`);
+          }}
         />
+      )}
+
+      {toast && (
+        <div className="toast" role="status">{toast}</div>
       )}
 
       <style jsx>{`
@@ -497,6 +522,27 @@ export default function IntegrationsPage() {
         }
         .btn-ghost:hover { color: #94a3b8; border-color: #334155; }
         .mt3 { margin-top: 0.75rem; }
+        .toast {
+          position: fixed;
+          bottom: 28px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #1e293b;
+          border: 1px solid #334155;
+          color: #f1f5f9;
+          font-size: 0.875rem;
+          font-weight: 500;
+          padding: 10px 20px;
+          border-radius: 8px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+          z-index: 100;
+          white-space: nowrap;
+          animation: slide-up 0.2s ease;
+        }
+        @keyframes slide-up {
+          from { opacity:0; transform:translateX(-50%) translateY(8px); }
+          to   { opacity:1; transform:translateX(-50%) translateY(0); }
+        }
       `}</style>
     </div>
   );

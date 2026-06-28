@@ -8,7 +8,7 @@ const ADMIN_USERS = [
     name:           'Nico',
     dealershipName: 'DCG Motors',
     plan:           'group_suite',
-    password:       '***REDACTED***',
+    password:       process.env.SEED_PASSWORD_NICO ?? '',
     isAdmin:        true,
   },
   {
@@ -16,7 +16,7 @@ const ADMIN_USERS = [
     name:           'Joe',
     dealershipName: 'ShiftAI HQ',
     plan:           'group_suite',
-    password:       '***REDACTED***',
+    password:       process.env.SEED_PASSWORD_JOE ?? '',
     isAdmin:        true,
   },
 ];
@@ -28,19 +28,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    for (const user of ADMIN_USERS) {
+      if (!user.password) {
+        return NextResponse.json(
+          { error: `SEED_PASSWORD_${user.name.toUpperCase()} env var is not set.` },
+          { status: 500 },
+        );
+      }
+    }
+
+    // Fetch all auth users ONCE with pagination — avoids O(N × listUsers) bug.
+    const existingByEmail: Record<string, string> = {};
+    let page = 1;
+    while (true) {
+      const { data } = await supabaseService.auth.admin.listUsers({ page, perPage: 1000 });
+      if (!data?.users?.length) break;
+      for (const u of data.users) {
+        if (u.email) existingByEmail[u.email] = u.id;
+      }
+      if (data.users.length < 1000) break;
+      page++;
+    }
+
     const results = [];
 
     for (const user of ADMIN_USERS) {
-      const { data: existingUsers } = await supabaseService.auth.admin.listUsers();
-      const exists = existingUsers?.users?.find(u => u.email === user.email);
-
+      const existingId = existingByEmail[user.email];
       let authUserId: string;
 
-      if (exists) {
-        await supabaseService.auth.admin.updateUserById(exists.id, {
-          password: user.password,
-        });
-        authUserId = exists.id;
+      if (existingId) {
+        await supabaseService.auth.admin.updateUserById(existingId, { password: user.password });
+        authUserId = existingId;
         results.push({ email: user.email, action: 'updated', authUserId });
       } else {
         const { data, error } = await supabaseService.auth.admin.createUser({
