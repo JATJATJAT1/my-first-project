@@ -1,20 +1,9 @@
 /** @type {import('next').NextConfig} */
 
-// Resolve the Supabase host for the CSP. Never let a missing or malformed
-// NEXT_PUBLIC_SUPABASE_URL (e.g. a leftover placeholder) crash the build —
-// fall back to a wildcard host instead.
-function resolveSupabaseHost() {
-  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!raw) return '*.supabase.co';
-  try {
-    return new URL(raw).host;
-  } catch {
-    console.warn(`Invalid NEXT_PUBLIC_SUPABASE_URL ("${raw}"); using wildcard host in CSP.`);
-    return '*.supabase.co';
-  }
-}
-
-const SUPABASE_HOST = resolveSupabaseHost();
+// Supabase host for the CSP. Hardcoded wildcard so the build can NEVER fail on
+// a missing/malformed NEXT_PUBLIC_SUPABASE_URL — the config does not touch env
+// vars at all. Any *.supabase.co project is allowed by connect-src.
+const SUPABASE_HOST = '*.supabase.co';
 
 const securityHeaders = [
   // Prevent browsers from downgrading to HTTP — 2-year max age
