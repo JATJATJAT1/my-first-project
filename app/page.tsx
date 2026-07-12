@@ -45,14 +45,20 @@ export default function LandingPage() {
   // enhances with an entrance, so nothing is ever hidden if JS is off.
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const els = rootRef.current?.querySelectorAll('[data-reveal]');
-    if (!els || !('IntersectionObserver' in window)) return;
+    const root = rootRef.current;
+    if (!root) return;
+    const els = Array.from(root.querySelectorAll('[data-reveal]'));
+    // Failsafe: guarantee everything becomes visible even if the observer
+    // never fires (unsupported, error, off-screen at load, etc.).
+    const revealAll = () => els.forEach(el => el.classList.add('in'));
+    if (!('IntersectionObserver' in window)) { revealAll(); return; }
     const io = new IntersectionObserver(
       entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }),
       { threshold: 0.12 },
     );
     els.forEach(el => io.observe(el));
-    return () => io.disconnect();
+    const t = setTimeout(revealAll, 2500);
+    return () => { io.disconnect(); clearTimeout(t); };
   }, []);
 
   async function runScan(e: React.FormEvent) {
