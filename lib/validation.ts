@@ -25,6 +25,10 @@ export const DisconnectIntegrationSchema = z.object({
   partnerId: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/, 'Invalid partner ID.'),
 });
 
+export const ScanSchema = z.object({
+  url: z.string().min(3, 'Enter a website URL.').max(2048),
+});
+
 // Convenience helper — returns { data } or throws a 400-ready error string.
 export function parseBody<T>(schema: z.ZodSchema<T>, body: unknown): T {
   const result = schema.safeParse(body);

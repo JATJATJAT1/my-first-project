@@ -26,7 +26,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline'",   // unsafe-inline needed for Next.js inline scripts
       "style-src 'self' 'unsafe-inline'",    // needed for styled-jsx
       `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST}`,
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: https:",
       "font-src 'self'",
       "frame-ancestors 'none'",
       "form-action 'self'",
