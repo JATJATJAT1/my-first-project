@@ -1,8 +1,20 @@
 /** @type {import('next').NextConfig} */
 
-const SUPABASE_HOST = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).host
-  : '*.supabase.co';
+// Resolve the Supabase host for the CSP. Never let a missing or malformed
+// NEXT_PUBLIC_SUPABASE_URL (e.g. a leftover placeholder) crash the build —
+// fall back to a wildcard host instead.
+function resolveSupabaseHost() {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!raw) return '*.supabase.co';
+  try {
+    return new URL(raw).host;
+  } catch {
+    console.warn(`Invalid NEXT_PUBLIC_SUPABASE_URL ("${raw}"); using wildcard host in CSP.`);
+    return '*.supabase.co';
+  }
+}
+
+const SUPABASE_HOST = resolveSupabaseHost();
 
 const securityHeaders = [
   // Prevent browsers from downgrading to HTTP — 2-year max age
